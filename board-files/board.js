@@ -1,3 +1,5 @@
+// you have some good modularity here, but seems like some of these functions could have moved to a few more files with more detailed names
+
 import { redAttacksFrom, redMovesFrom, blackMovesFrom, blackAttacksFrom, isItemInArray, movePiece, removePiece, kingsRow, getKingAttack, getKingMoves } from './board-utils.js';
 import { loadFromLocalStorage, saveToLocalStorage } from '../game-utils.js';
 
@@ -8,16 +10,15 @@ const nameDisplay = document.getElementById('name-display-area');
 const gameBoard = document.getElementById('game-board');
 const localStorageData = loadFromLocalStorage();
 
-let boardState = [
-    { color: 'red', isKing: false }, { color: 'red', isKing: false }, { color: 'red', isKing: false }, { color: 'red', isKing: false }, 
-    { color: 'red', isKing: false }, { color: 'red', isKing: false }, { color: 'red', isKing: false }, { color: 'red', isKing: false },
-    { color: 'red', isKing: false }, { color: 'red', isKing: false }, { color: 'red', isKing: false }, { color: 'red', isKing: false }, 
-    null, null, null, null,
-    null, null, null, null, 
-    { color: 'black', isKing: false }, { color: 'black', isKing: false }, { color: 'black', isKing: false }, { color: 'black', isKing: false },
-    { color: 'black', isKing: false }, { color: 'black', isKing: false }, { color: 'black', isKing: false }, { color: 'black', isKing: false }, 
-    { color: 'black', isKing: false }, { color: 'black', isKing: false }, { color: 'black', isKing: false }, { color: 'black', isKing: false }
-];
+function makeInitialBoard() {
+    return Array(32).fill(null).map((item, i) => {
+        if (i < 12) return { color: 'red', isKing: false };
+        if (i >= 12 && i < 20) return null;
+        return { color: 'black', isKing: false };
+    });
+}
+
+let boardState = makeInitialBoard();
 
 let squareSelected = [];
 let turn = 'black';
@@ -52,6 +53,7 @@ function renderBoard() {
         const currentPiece = boardState[i];
         const currentSquare = allClickableSquares[i];
 
+        // not the most elegant solution to preventing duplication, but it works!
         currentSquare.classList.remove('king', 'red-piece', 'black-piece');
         if (currentPiece) {
             if (currentPiece.color === 'red') {
@@ -76,6 +78,7 @@ function setEventListeners() {
     }
 }
 
+// this could have been in a file on its own, for example
 function checkMove(lastClick) {
     const isKingMove = checkKing(lastClick);
 
@@ -83,7 +86,9 @@ function checkMove(lastClick) {
     if (squareSelected.length === 1 && boardState[lastClick.id] === null) {
 
         const isAttackOk = attackOk(lastClick);
-        const isNextAttackOk = nextAttackOk(lastClick);
+        // const [someBool, someId] = nextAttackOk(lastClick);
+        // for the record, you can destructure returned arrays like so and refer to their contents by name
+        const isNextAttackOk = nextAttackOk(lastClick); // for the record, you can destructure returned arrays like so and refer to their contents by name
 
         if (forceJump === false && secondClickOk(lastClick) && stopMove === false) {
             squareSelected.push(lastClick.id);
@@ -145,10 +150,7 @@ function checkMove(lastClick) {
 }
 
 function switchTurn() {
-    if (turn === 'red') {
-        return 'black';   
-    }
-    return 'red';
+    return turn === 'red' ? 'black' : 'red';
 }
 
 function crownKing(lastClick) {
@@ -166,17 +168,11 @@ function refreshTurnVariables() {
 }
 
 function getMoves(color, squareNumber) {
-    if (color === 'red') {
-        return redMovesFrom[squareNumber];
-    }
-    return blackMovesFrom[squareNumber];
+    return color === 'red' ? redMovesFrom[squareNumber] : blackMovesFrom[squareNumber];
 }
 
 function firstClickOk(lastClick) {
-    if (boardState[lastClick.id] && boardState[lastClick.id].color === turn) {
-        return true;
-    }
-    return false;
+    return boardState[lastClick.id] && boardState[lastClick.id].color === turn;
 }
 
 function secondClickOk(lastClick) {
@@ -186,14 +182,16 @@ function secondClickOk(lastClick) {
         const isAPossibleMove = isItemInArray(lastClick.id, possibleMoves);
         const possibleKingMoves = getKingMoves(squareSelected[0]);
         const isAPossibleKingmove = isItemInArray(lastClick.id, possibleKingMoves);
+        const condition1 = forceJump === false 
+            && isEmpty 
+            && isAPossibleMove;
+        const condition2 = boardState[squareSelected[0]] 
+            && boardState[squareSelected[0]].isKing 
+            && isEmpty 
+            && forceJump === false 
+            && isAPossibleKingmove;
         
-        if (forceJump === false && isEmpty && isAPossibleMove) {
-            return true;
-        }
-        if (boardState[squareSelected[0]] && boardState[squareSelected[0]].isKing && isEmpty && forceJump === false && isAPossibleKingmove) {
-            return true;
-        }
-        return false;
+        return condition1 || condition2;
     }
 }
 
@@ -213,7 +211,8 @@ function attackOk(lastClick) {
                   !isSquareIdEmpty(currentJump) &&
                    boardState[currentJump] &&
                    boardState[currentJump].color !== turn) {
-
+                
+                // cool tuple! really fun solution. probably could have returned an object with ketys for more clarity, but this is pretty cool
                 return [true, currentJump];
             }
         }
@@ -338,7 +337,8 @@ function playerColor(color) {
 function checkEndGame() {
     let red = 0;
     let black = 0;
-
+    let winningPlayer;
+    let losingPlayer;
     for (let i = 0; i < boardState.length; i++) {
         if (boardState[i] && boardState[i].color === 'red') {
             red++;
@@ -348,25 +348,21 @@ function checkEndGame() {
         }
     }
     if (red === 0) {
-        const winningPlayer = playerColor('black');
-        const losingPlayer = playerColor('red');
-        winningPlayer.wins++;
-        losingPlayer.losses++;
-        winningPlayer.lastGameResult = 'win';
-        losingPlayer.lastGameResult = 'loss';
-        saveToLocalStorage(localStorageData);
-        document.location = '../results/results.html';
+        winningPlayer = playerColor('black');
+        losingPlayer = playerColor('red');
     }
     if (black === 0) {
-        const winningPlayer = playerColor('red');
-        const losingPlayer = playerColor('black');
-        winningPlayer.wins++;
-        losingPlayer.losses++;
-        winningPlayer.lastGameResult = 'win';
-        losingPlayer.lastGameResult = 'loss';
-        saveToLocalStorage(localStorageData);
-        document.location = '../results/results.html';
+        winningPlayer = playerColor('red');
+        losingPlayer = playerColor('black');
     }
+
+    winningPlayer.wins++;
+    losingPlayer.losses++;
+    winningPlayer.lastGameResult = 'win';
+    losingPlayer.lastGameResult = 'loss';
+    saveToLocalStorage(localStorageData);
+    document.location = '../results/results.html';
+
 }
 
 function resetLastGameResult() {

@@ -1,8 +1,6 @@
 const MAGICKEY = 'CHECKERSDATA';
 
 export function saveToLocalStorage(dataToSave) {
-
-
     const stringyData = JSON.stringify(dataToSave);
     localStorage.setItem(MAGICKEY, stringyData);
 }
@@ -13,10 +11,6 @@ export function loadFromLocalStorage() {
     return data;
 }
 
-export function randomizer() {
-    const randomNumber = Math.floor(Math.random() * 2);
-    if (randomNumber === 0) {
-        return ['black', 'red'];
-    }
-    return ['red', 'black'];
-} 
+export const randomizer = () => Math.floor(Math.random() * 2) === 0 
+    ? ['black', 'red'] 
+    : ['red', 'black'];

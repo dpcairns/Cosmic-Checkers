@@ -1,3 +1,5 @@
+// interesting implementation! I wonder if you could have abstracted this stuff, and figure out the legal jumps procedurally, rather than hard coding them
+
 export const redMovesFrom = [
     [4, 5], [5, 6], [6, 7], [7],
     [8], [8, 9], [9, 10], [10, 11],
