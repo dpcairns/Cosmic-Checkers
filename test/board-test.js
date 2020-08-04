@@ -4,6 +4,8 @@ import { isItemInArray, movePiece, getKingMoves } from '../board-files/board-uti
 
 const test = QUnit.test;
 
+// the movePiece test is cool, but I would have liked to see you test one of your more complex functions
+
 test('isitemInArray should take in a number and return true if the number is in the array', (expect) => {
     //Arrange
     // Set up your arguments and expectations
